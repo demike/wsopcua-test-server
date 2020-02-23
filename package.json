@@ -1,0 +1,33 @@
+{
+  "name": "wsopcua-test-server",
+  "version": "0.0.1",
+  "description": "test opcua server with websocket support",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "build-watch": "tsc --watch",
+    "run": "node ./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/demike/wsopcua-test-server.git"
+  },
+  "keywords": [
+    "websocket",
+    "opcua"
+  ],
+  "author": "Michael Derfler",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/demike/wsopcua-test-server/issues"
+  },
+  "homepage": "https://github.com/demike/wsopcua-test-server#readme",
+  "dependencies": {
+    "ws-node-opcua": "file:../node-opcua/ws-node-opcua"
+  },
+  "devDependencies": {
+    "@types/node": "^13.5.1",
+    "typescript": "^3.6.2"
+  }
+}
