@@ -29,5 +29,8 @@
   "devDependencies": {
     "@types/node": "^13.5.1",
     "typescript": "^3.6.2"
+  },
+  "bin": {
+    "wsopcua-test-server": "./dist/index.js"
   }
 }
