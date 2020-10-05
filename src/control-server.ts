@@ -1,7 +1,11 @@
-import * as opcua from 'ws-node-opcua/packages/node-opcua';
-import { TransportType, OPCUAServer } from 'ws-node-opcua/packages/node-opcua';
 
-function construct_control_address_space(server: OPCUAServer) {
+import { TransportType } from './server-endpoint';
+import { WsOPCUAServer } from './ws-opcua-server';
+
+
+
+
+function construct_control_address_space(server: WsOPCUAServer) {
 
 
     const addressSpace = server.engine.addressSpace;
@@ -17,13 +21,15 @@ function construct_control_address_space(server: OPCUAServer) {
    // _"add some variables"
 }
 
+
+
 export async function startControlServer() {
-    const server = new opcua.OPCUAServer({
+    const server = new WsOPCUAServer({
         port: 4840,
         alternateEndpoints: [{
             transportType: TransportType.WEBSOCKET,
             port: 4444
-        }],
+        } as any],
         resourcePath: "",
         buildInfo: {
             productName: "wsopcua-test-server",
