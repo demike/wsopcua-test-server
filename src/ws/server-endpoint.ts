@@ -1,4 +1,4 @@
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { IncomingMessage } from 'http';
 import { assert, OPCUAServerEndPoint, OPCUAServerEndpointOptions, ServerSecureChannelLayer} from 'node-opcua';
 import { toPem } from 'node-opcua-crypto';
