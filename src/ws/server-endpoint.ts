@@ -1,11 +1,13 @@
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 import { IncomingMessage } from 'http';
 import { assert, OPCUAServerEndPoint, OPCUAServerEndpointOptions, ServerSecureChannelLayer} from 'node-opcua';
 import { toPem } from 'node-opcua-crypto';
-import { debugLog } from 'node-opcua-pki/dist/lib/pki/toolbox';
 import * as ws from 'ws';
 import * as https from 'https';
 import { WebSocketSocketWrapper } from './websocket-socket-wrapper';
+import { make_debugLog } from "node-opcua-debug";
+
+const debugLog = make_debugLog(__filename);
 
 export enum TransportType {
     TCP,
