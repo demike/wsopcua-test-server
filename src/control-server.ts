@@ -1,19 +1,17 @@
 
-import { TransportType } from './server-endpoint';
-import { WsOPCUAServer } from './ws-opcua-server';
+import { Controller } from './controller';
+import { TransportType } from './ws/server-endpoint';
+import { WsOPCUAServer } from './ws/ws-opcua-server';
 
 
 
 
-function construct_control_address_space(server: WsOPCUAServer) {
+function construct_control_address_space(controlServer: WsOPCUAServer,) {
 
 
-    const addressSpace = server.engine.addressSpace;
-    if(!addressSpace) {
-        throw new Error("missing address space");
-    }
-    const namespace = addressSpace.getOwnNamespace();
-
+    const controller = new Controller(controlServer, 1);
+    
+   // (namespace as any).dispose();
     // declare a new object
    // _"add a new object into the objects folder"
 
@@ -24,7 +22,7 @@ function construct_control_address_space(server: WsOPCUAServer) {
 
 
 export async function startControlServer() {
-    const server = new WsOPCUAServer({
+    const controlServer = new WsOPCUAServer({
         port: 4840,
         alternateEndpoints: [{
             transportType: TransportType.WEBSOCKET,
@@ -32,20 +30,22 @@ export async function startControlServer() {
         } as any],
         resourcePath: "",
         buildInfo: {
-            productName: "wsopcua-test-server",
+            productName: "wsopcua-control-server",
             buildNumber: "1",
             buildDate: new Date(Date.now())
-        }
+        },
+        serverInfo: {
+            applicationUri: "wsopcua-control-server"
+        },
     });
     
-    await server.initialize();
+    await controlServer.initialize();
     console.log("control server initialized");
-    construct_control_address_space(server);
+    construct_control_address_space(controlServer);
     
-    server.start(function() {
+    controlServer.start(function() {
         console.log("Server is now listening ... ( press CTRL+C to stop)");
-        console.log("port ", server.endpoints[0].port)
-    });
-    
+        console.log("port ", controlServer.endpoints[0].port)
+    });    
 }
 
