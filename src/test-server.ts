@@ -2,7 +2,7 @@
 import { AddressSpace, generateAddressSpace } from 'node-opcua';
 import { TransportType } from './ws/server-endpoint';
 import { WsOPCUAServer } from './ws/ws-opcua-server';
-import { diNodeSetFilename, standardNodeSetFilename, roboticsNodeSetFilename} from 'node-opcua-nodesets';
+import { nodesets } from 'node-opcua-nodesets';
 
 
 
@@ -10,7 +10,7 @@ import { diNodeSetFilename, standardNodeSetFilename, roboticsNodeSetFilename} fr
 async function construct_test_address_space(server: WsOPCUAServer) {
 
     const addressSpace = AddressSpace.create();
-    await generateAddressSpace(addressSpace,[standardNodeSetFilename,diNodeSetFilename] );
+    await generateAddressSpace(addressSpace,[nodesets.standard, nodesets.di] );
     server.engine.addressSpace = addressSpace;
     // declare a new object
    // _"add a new object into the objects folder"
@@ -41,7 +41,7 @@ export async function startTestServer(nodeSetFileNames: string[]) {
         serverInfo: {
             applicationUri: "wsopcua-test-server",
         },
-        nodeset_filename: [standardNodeSetFilename, ...nodeSetFileNames]
+        nodeset_filename: [nodesets.standard, ...nodeSetFileNames]
     });
     
     

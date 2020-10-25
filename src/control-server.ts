@@ -43,9 +43,14 @@ export async function startControlServer() {
     console.log("control server initialized");
     construct_control_address_space(controlServer);
     
-    controlServer.start(function() {
-        console.log("Server is now listening ... ( press CTRL+C to stop)");
-        console.log("port ", controlServer.endpoints[0].port)
-    });    
+    controlServer.start(function(err?: Error) {
+        if(err ) {
+            console.log("failed to start server !");
+            console.log(err);
+        } else {
+            console.log("Server is now listening ... ( press CTRL+C to stop)");
+            console.log("port ", controlServer.endpoints[0].port);
+        }
+    } as any);    
 }
 

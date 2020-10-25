@@ -1,4 +1,5 @@
-import chalk from 'chalk';
+// import * as chalk from 'chalk';
+const chalk = require('chalk');
 import { IncomingMessage } from 'http';
 import { assert, OPCUAServerEndPoint, OPCUAServerEndpointOptions, ServerSecureChannelLayer} from 'node-opcua';
 import { toPem } from 'node-opcua-crypto';
@@ -6,8 +7,25 @@ import * as ws from 'ws';
 import * as https from 'https';
 import { WebSocketSocketWrapper } from './websocket-socket-wrapper';
 import { make_debugLog } from "node-opcua-debug";
+import { Socket, } from 'net';
 
 const debugLog = make_debugLog(__filename);
+
+
+function extractSocketData(socket: Socket, reason: string) {
+    const { bytesRead, bytesWritten, remoteAddress, remoteFamily, remotePort, localAddress, localPort } = socket;
+    return  {
+        bytesRead,
+        bytesWritten,
+        localAddress,
+        localPort,
+        remoteAddress,
+        remoteFamily,
+        remotePort,
+        timestamp: new Date()
+    };
+}
+
 
 export enum TransportType {
     TCP,
@@ -90,7 +108,7 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
 
     protected _verifyClient(info: { origin: string; secure: boolean; req: IncomingMessage }): boolean {
         if (!this._started) {
-            debugLog(chalk.bgWhite.cyan("OPCUATCPServerEndPoint#_on_client_connection " +
+            debugLog(chalk.bgWhite.cyan("OPCUAWsServerEndPoint#_on_client_connection " +
               "SERVER END POINT IS PROBABLY SHUTTING DOWN !!! - Connection is refused"));
             return false;        
         }
@@ -99,6 +117,16 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
         debugLog(" nbConnections ", nbConnections, " self._server.maxListeners",
           this._server!.getMaxListeners(), this.maxConnections);
         if (nbConnections >= this.maxConnections) {
+            console.log(
+                chalk.bgWhite.cyan(
+                    "OPCUAServerEndPoint#_on_client_connection " +
+                        "The maximum number of connection has been reached - Connection is refused"
+                )
+            );
+            const reason = "maxConnections reached (" + this.maxConnections + ")";
+            const socketData = extractSocketData(info.req.socket, reason);
+            this.emit("connectionRefused", socketData);
+
             return false;
         }
 

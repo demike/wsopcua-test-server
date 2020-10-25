@@ -1,5 +1,5 @@
 import { WsOPCUAServer } from "./ws/ws-opcua-server";
-import { AccessLevelFlag, BaseNode, coerceNodeId, DataType, makeNodeId, Namespace, ObjectIds, readNodeSet2XmlFile, StatusCodes, Variant, VariantArrayType } from "node-opcua";
+import { AccessLevelFlag, BaseNode, coerceNodeId, DataType, Namespace, readNodeSet2XmlFile, StatusCodes, Variant, VariantArrayType } from "node-opcua";
 import { NodeSetLoader } from 'node-opcua-address-space/dist/source/loader/load_nodeset2';
 import { nodesets } from 'node-opcua-nodesets';
 import { startTestServer } from "./test-server";
@@ -12,7 +12,7 @@ interface UANamespace extends Namespace {
 export class Controller {
     private testServer?: WsOPCUAServer;
     public nodesetMap= new Map<string,string>([
-        ['http://opcfoundation.org/UA/DI/', nodesets.diNodeSetFilename]
+        ['http://opcfoundation.org/UA/DI/', nodesets.di]
 
     ]);
     constructor(private controlServer: WsOPCUAServer, private namespace: number) {
