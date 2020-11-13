@@ -74,10 +74,12 @@ export class Controller {
             nodeId: coerceNodeId("s=Controller.stopTestServer", 1),
         });
         
-        methodStopTestServer?.bindMethod( (inputArguments, _context, callback) => {
+        methodStopTestServer?.bindMethod( async (inputArguments, _context, callback) => {
 
-            this.stopTestServer();
+            await this.stopTestServer();
+            console.log("test server shut down");
             callback(null, {statusCode: StatusCodes.Good});
+
         })
 
 

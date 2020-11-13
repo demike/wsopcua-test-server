@@ -49,11 +49,16 @@ export async function startTestServer(nodeSetFileNames: string[]) {
     await server.initialize();
     // await construct_test_address_space(server);
     
-    console.log("control server initialized");
+    console.log("test server initialized");
     
-    server.start(function() {
-        console.log("Server is now listening ... ( press CTRL+C to stop)");
-        console.log("port ", server.endpoints[0].port)
+    server.start(function(err?: Error) {
+        if(err ) {
+            console.log("failed to start test server !");
+            console.log(err);
+        } else {
+            console.log("Test Server is now listening ... ( press CTRL+C to stop)");
+            console.log("port ", server.endpoints[0].port);
+        }
     });
     return server;
     
