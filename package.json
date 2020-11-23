@@ -1,6 +1,6 @@
 {
   "name": "wsopcua-test-server",
-  "version": "1.0.2",
+  "version": "1.2.0",
   "description": "test opcua server with websocket support",
   "main": "index.js",
   "scripts": {
