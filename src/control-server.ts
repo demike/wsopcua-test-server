@@ -31,6 +31,7 @@ export async function startControlServer() {
     port: 4840,
     alternateEndpoints: [
       {
+
         transportType: TransportType.WEBSOCKET,
         port: 4444,
       } as any,
@@ -44,6 +45,11 @@ export async function startControlServer() {
     serverInfo: {
       applicationUri: "wsopcua-control-server",
     },
+    serverCapabilities: {
+      minSupportedSampleRate: 10
+    }
+    
+
   });
 
   await controlServer.initialize();

@@ -1,66 +1,58 @@
+import { AddressSpace, generateAddressSpace, UAVariable } from "node-opcua";
+import { TransportType } from "./ws/server-endpoint";
+import { WsOPCUAServer } from "./ws/ws-opcua-server";
+import { nodesets } from "node-opcua-nodesets";
 
-import { AddressSpace, generateAddressSpace } from 'node-opcua';
-import { TransportType } from './ws/server-endpoint';
-import { WsOPCUAServer } from './ws/ws-opcua-server';
-import { nodesets } from 'node-opcua-nodesets';
-
-
-
-
-async function construct_test_address_space(server: WsOPCUAServer) {
-
-    const addressSpace = AddressSpace.create();
-    await generateAddressSpace(addressSpace,[nodesets.standard, nodesets.di] );
-    server.engine.addressSpace = addressSpace;
-    // declare a new object
-   // _"add a new object into the objects folder"
-
-    // add some variables
-   // _"add some variables"
+async function adjust_address_space(server: WsOPCUAServer) {
+  // reduce the minimum sampling interval of CurrentTime from 1000 to 50 to possibly speed up tests
+  const currentTimeNode = server.engine.addressSpace
+    ?.getDefaultNamespace()
+    .findNode("i=2258") as UAVariable;
+  currentTimeNode.minimumSamplingInterval = 50;
 }
-
 
 /**
  * a list of nodeset file names (excluding the standard nodes / namespace)
- * @param nodeSetFileNames 
+ * @param nodeSetFileNames
  */
 export async function startTestServer(nodeSetFileNames: string[]) {
-    const server = new WsOPCUAServer({
-        port: 4841,
-        alternateEndpoints: [{
-            transportType: TransportType.WEBSOCKET,
-            port: 4445
-        } as any],
-        resourcePath: "",
-        buildInfo: {
-            productName: "wsopcua-test-server",
-            productUri: "wsopcua-test-server",
-            buildNumber: "1",
-            buildDate: new Date(Date.now())
-        },
-        serverInfo: {
-            applicationUri: "wsopcua-test-server",
-        },
-        nodeset_filename: [nodesets.standard, ...nodeSetFileNames]
-    });
-    
-    
-    
-    await server.initialize();
-    // await construct_test_address_space(server);
-    
-    console.log("test server initialized");
-    
-    server.start(function(err?: Error) {
-        if(err ) {
-            console.log("failed to start test server !");
-            console.log(err);
-        } else {
-            console.log("Test Server is now listening ... ( press CTRL+C to stop)");
-            console.log("port ", server.endpoints[0].port);
-        }
-    });
-    return server;
-    
-}
+  const server = new WsOPCUAServer({
+    port: 4841,
+    alternateEndpoints: [
+      {
+        transportType: TransportType.WEBSOCKET,
+        port: 4445,
+      } as any,
+    ],
+    resourcePath: "",
+    buildInfo: {
+      productName: "wsopcua-test-server",
+      productUri: "wsopcua-test-server",
+      buildNumber: "1",
+      buildDate: new Date(Date.now()),
+    },
+    serverInfo: {
+      applicationUri: "wsopcua-test-server",
+    },
+    nodeset_filename: [nodesets.standard, ...nodeSetFileNames],
+    serverCapabilities: {
+      minSupportedSampleRate: 10,
+    },
+  });
 
+  await server.initialize();
+  adjust_address_space(server);
+
+  console.log("test server initialized");
+
+  server.start(function (err?: Error) {
+    if (err) {
+      console.log("failed to start test server !");
+      console.log(err);
+    } else {
+      console.log("Test Server is now listening ... ( press CTRL+C to stop)");
+      console.log("port ", server.endpoints[0].port);
+    }
+  });
+  return server;
+}
