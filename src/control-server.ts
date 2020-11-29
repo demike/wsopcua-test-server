@@ -29,12 +29,12 @@ function construct_control_address_space(controlServer: WsOPCUAServer) {
 export async function startControlServer() {
   const controlServer = new WsOPCUAServer({
     port: 4840,
+
     alternateEndpoints: [
       {
-
         transportType: TransportType.WEBSOCKET,
         port: 4444,
-      } as any,
+      },
     ],
     resourcePath: "",
     buildInfo: {
@@ -46,10 +46,8 @@ export async function startControlServer() {
       applicationUri: "wsopcua-control-server",
     },
     serverCapabilities: {
-      minSupportedSampleRate: 10
-    }
-    
-
+      minSupportedSampleRate: 10,
+    },
   });
 
   await controlServer.initialize();
