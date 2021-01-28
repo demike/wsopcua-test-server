@@ -4,6 +4,7 @@ import {
   coerceNodeId,
   DataType,
   ExpandedNodeId,
+  LocalizedText,
   NodeId,
   StatusCodes,
   Variant,
@@ -78,28 +79,41 @@ export class NodeManager {
         { name: "browseName", dataType: DataType.String },
         { name: "parent", dataType: DataType.NodeId },
         { name: "value", dataType: DataType.Variant },
+        {
+          name: "displayName",
+          dataType: DataType.LocalizedText,
+          valueRank: -3 /* Scalar or one dimensional array */,
+        },
       ],
     });
+    methodAddVariable?.inputArguments;
 
     methodAddVariable?.bindMethod(
       async (inputArguments, _context, callback) => {
         const nodeId: NodeId | ExpandedNodeId = inputArguments[0].value;
         const browseName: string = inputArguments[1].value;
         const parent: NodeId = inputArguments[2].value;
-        const value: Variant = inputArguments[4];
+        const value: Variant = inputArguments[3];
+        const displayName: LocalizedText | LocalizedText[] | undefined =
+          Array.isArray(inputArguments[4].value) &&
+          inputArguments[4].value.length > 0
+            ? inputArguments[4].value
+            : undefined;
 
         const targetNs = this.testServer?.engine.addressSpace?.getNamespace(
           (nodeId as ExpandedNodeId).namespaceUri ?? nodeId.namespace
         );
 
-        const variable = ns?.addVariable({
+        const variable = targetNs?.addVariable({
           browseName,
           nodeId,
           accessLevel:
             AccessLevelFlag.CurrentWrite | AccessLevelFlag.CurrentWrite,
           valueRank: 1,
           value,
-          propertyOf: parent,
+          dataType: value.dataType,
+          organizedBy: parent, // TODO: allow different relations
+          displayName,
         });
 
         if (variable) {
