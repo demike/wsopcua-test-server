@@ -45,7 +45,7 @@ export async function startTestServer(nodeSetFileNames: string[]) {
 
   console.log("test server initialized");
 
-  server.start(function (err?: Error) {
+  await server.start(function (err?: Error) {
     if (err) {
       console.log("failed to start test server !");
       console.log(err);
