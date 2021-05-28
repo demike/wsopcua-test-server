@@ -45,14 +45,14 @@ export async function startTestServer(nodeSetFileNames: string[]) {
 
   console.log("test server initialized");
 
-  await server.start(function (err?: Error) {
-    if (err) {
-      console.log("failed to start test server !");
-      console.log(err);
-    } else {
-      console.log("Test Server is now listening ... ( press CTRL+C to stop)");
-      console.log("port ", server.endpoints[0].port);
-    }
-  });
+  try {
+    await server.start();
+    console.log("Test Server is now listening ... ( press CTRL+C to stop)");
+    console.log("port ", server.endpoints[0].port);
+  } catch(err) {
+    console.log("failed to start test server !");
+    console.log(err);
+  }
+  
   return server;
 }
