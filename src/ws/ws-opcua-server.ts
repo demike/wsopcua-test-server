@@ -69,7 +69,7 @@ export class WsOPCUAServer extends OPCUAServer {
     if (!endpointOptions) {
       throw new Error("internal error");
     }
-    var hostname = getFullyQualifiedDomainName();
+    const hostname = getFullyQualifiedDomainName();
     endpointOptions.hostname = endpointOptions.hostname || hostname;
     endpointOptions.port = endpointOptions.port || 26543;
 
@@ -99,9 +99,7 @@ export class WsOPCUAServer extends OPCUAServer {
         ? endpointOptions.alternateHostname
         : [endpointOptions.alternateHostname];
     const allowAnonymous =
-      endpointOptions.allowAnonymous === undefined
-        ? true
-        : !!endpointOptions.allowAnonymous;
+      endpointOptions.allowAnonymous === undefined ? true : !!endpointOptions.allowAnonymous;
 
     endPoint.addStandardEndpointDescriptions({
       allowAnonymous,
