@@ -1,5 +1,6 @@
 import { Controller } from "./controller";
 import { NodeManager } from "./node-manager";
+import { UserManager } from "./user-manager";
 import { TransportType } from "./ws/server-endpoint";
 import { WsOPCUAServer } from "./ws/ws-opcua-server";
 
@@ -26,10 +27,10 @@ function construct_control_address_space(controlServer: WsOPCUAServer) {
   // _"add some variables"
 }
 
-export async function startControlServer() {
+export async function startControlServer(userManager?: UserManager) {
   const controlServer = new WsOPCUAServer({
     port: 4840,
-
+    userManager,
     alternateEndpoints: [
       {
         transportType: TransportType.WEBSOCKET,

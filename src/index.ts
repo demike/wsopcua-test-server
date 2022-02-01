@@ -8,6 +8,10 @@
     OPCUAServerEndpoint._dump_statistics
  */
 
+
+// setDebugFlag('server_secure_channel_layer',true);
+// setDebugFlag('message_builder',true);
+
 import { startControlServer } from "./control-server";
 import { Controller } from "./controller";
 

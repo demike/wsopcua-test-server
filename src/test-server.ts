@@ -2,6 +2,7 @@ import { AddressSpace, generateAddressSpace, UAVariable } from "node-opcua";
 import { TransportType } from "./ws/server-endpoint";
 import { WsOPCUAServer } from "./ws/ws-opcua-server";
 import { nodesets } from "node-opcua-nodesets";
+import { UserManager } from "./user-manager";
 
 async function adjust_address_space(server: WsOPCUAServer) {
   // reduce the minimum sampling interval of CurrentTime from 1000 to 50 to possibly speed up tests
@@ -18,6 +19,7 @@ async function adjust_address_space(server: WsOPCUAServer) {
 export async function startTestServer(nodeSetFileNames: string[]) {
   const server = new WsOPCUAServer({
     port: 4841,
+    userManager: new UserManager(),
     alternateEndpoints: [
       {
         transportType: TransportType.WEBSOCKET,
@@ -38,6 +40,8 @@ export async function startTestServer(nodeSetFileNames: string[]) {
     serverCapabilities: {
       minSupportedSampleRate: 10,
     },
+    certificateFile: 'assets/certificate.pem',
+    privateKeyFile: 'assets/private_key.pem'
   });
 
   await server.initialize();

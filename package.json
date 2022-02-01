@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "build-watch": "tsc --watch",
-    "run": "node ./dist/index.js"
+    "build": "tsc && npm run copy:assets",
+    "build-watch": "npm run copy:assets && tsc --watch",
+    "run": "node ./dist/index.js",
+    "copy:assets": "(cp -R src/assets dist/ || xcopy /i /y src\\assets dist\\assets)"
   },
   "repository": {
     "type": "git",
