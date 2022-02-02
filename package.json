@@ -26,8 +26,8 @@
   "homepage": "https://github.com/demike/wsopcua-test-server#readme",
   "dependencies": {
     "chalk": "^4.1.1",
-    "node-opcua": "^2.44.0",
-    "node-opcua-crypto": "^1.8.0",
+    "node-opcua": "~2.44.0",
+    "node-opcua-crypto": "~1.7.5",
     "ws": "^7.4.6"
   },
   "devDependencies": {
