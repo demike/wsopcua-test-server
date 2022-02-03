@@ -3,6 +3,7 @@ import { TransportType } from "./ws/server-endpoint";
 import { WsOPCUAServer } from "./ws/ws-opcua-server";
 import { nodesets } from "node-opcua-nodesets";
 import { UserManager } from "./user-manager";
+import * as path from 'path';
 
 async function adjust_address_space(server: WsOPCUAServer) {
   // reduce the minimum sampling interval of CurrentTime from 1000 to 50 to possibly speed up tests
@@ -40,8 +41,8 @@ export async function startTestServer(nodeSetFileNames: string[]) {
     serverCapabilities: {
       minSupportedSampleRate: 10,
     },
-    certificateFile: 'assets/certificate.pem',
-    privateKeyFile: 'assets/private_key.pem'
+    certificateFile: path.join(__dirname,'./assets/certificate.pem'),
+    privateKeyFile: path.join(__dirname,'./assets/private_key.pem')
   });
 
   await server.initialize();
