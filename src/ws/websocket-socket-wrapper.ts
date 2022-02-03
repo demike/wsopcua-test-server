@@ -42,14 +42,16 @@ export class WebSocketSocketWrapper implements net.Socket {
     setKeepAlive(enable?: boolean, initialDelay?: number): this {
         throw new Error('Method not implemented.');
     }
-    address(): string | net.AddressInfo {
+    address() {
        return this.webSocket._socket.address();
     }
-    unref(): void {
+    unref() {
         throw new Error('Method not implemented.');
+        return this;
     }
-    ref(): void {
+    ref() {
         throw new Error('Method not implemented.');
+        return this;
     }
     
     get bufferSize() {
@@ -82,11 +84,12 @@ export class WebSocketSocketWrapper implements net.Socket {
     get remotePort() {
         return this.webSocket._socket.remotePort;
     }
-    end(cb?: () => void): void;
-    end(buffer: string | Uint8Array, cb?: () => void): void;
-    end(str: string | Uint8Array, encoding?: string, cb?: () => void): void;
-    end(str?: any, encoding?: any, cb?: any) {
+    end(cb?: () => void): this;
+    end(buffer: string | Uint8Array, cb?: () => void): this;
+    end(str: string | Uint8Array, encoding?: string, cb?: () => void): this;
+    end(str?: any, encoding?: any, cb?: any): this {
         this.webSocket.close();
+        return this;
     }
 
     addListener(event: string, listener: (...args: any[]) => void): this;
@@ -232,6 +235,24 @@ export class WebSocketSocketWrapper implements net.Socket {
     get bytesRead() {
         return this.webSocket._socket.bytesRead;
     }
+    get writableCorked(): number {
+        return this.webSocket._socket.writableCorked;
+    }
+
+    get allowHalfOpen(): boolean {
+        return this.webSocket._socket.allowHalfOpen;
+    }
+    set allowHalfOpen(allow: boolean) {
+        this.webSocket._socket.allowHalfOpen = allow;
+    }
+
+    get readableAborted(): boolean {
+        return this.webSocket._socket.readableAborted;
+    }
+
+    get readableDidRead(): boolean {
+        return this.webSocket._socket.readableDidRead;
+    }
 
     _write(chunk: any, encoding: string, callback: (error?: Error | null) => void): void {
         throw new Error('Method not implemented.');
@@ -273,9 +294,10 @@ export class WebSocketSocketWrapper implements net.Socket {
     push(chunk: any, encoding?: string): boolean {
         throw new Error('Method not implemented.');
     }
-    destroy(error?: Error): void {
+    destroy(error?: Error): this {
         // TODO: check if we should use net.socket.destroy instead
         this.webSocket.close();
+        return this;
     }
     removeListener(event: 'close', listener: () => void): this;
     removeListener(event: 'data', listener: (chunk: any) => void): this;
@@ -288,9 +310,7 @@ export class WebSocketSocketWrapper implements net.Socket {
         this.webSocket.removeListener(event, listener);
         return this;
     }
-    [Symbol.asyncIterator](): AsyncIterableIterator<any> {
-        throw new Error('Method not implemented.');
-    }
+
     pipe<T extends NodeJS.WritableStream>(destination: T, options?: { end?: boolean | undefined; }): T {
         throw new Error('Method not implemented.');
     }
@@ -327,6 +347,7 @@ export class WebSocketSocketWrapper implements net.Socket {
         this.webSocket = websocket as any;
     }
     
-    
-
+    [Symbol.asyncIterator](): AsyncIterableIterator<any> {
+        throw new Error("Method not implemented.");
+    }
 }
