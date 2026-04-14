@@ -2,7 +2,8 @@
   "name": "wsopcua-test-server",
   "version": "1.2.0",
   "description": "test opcua server with websocket support",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && npm run copy:assets",
@@ -40,6 +41,6 @@
     "wsopcua-test-server": "./dist/index.js"
   },
   "files": [
-    "dist/*"
+    "dist/**"
   ]
 }

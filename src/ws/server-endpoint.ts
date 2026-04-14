@@ -81,18 +81,19 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
     assert(!this._started, "OPCUAWSServerEndPoint is already listening");
     assert(!this._server);
 
-    this._server = this.createWSServer();
+    const server = this.createWSServer();
+    this._server = server;
 
-    this._server.setMaxListeners(this.maxConnections + 1); // plus one extra
+    server.setMaxListeners(this.maxConnections + 1); // plus one extra
 
     // like net.Server
-    (this._server as any).maxConnections = this._server.getMaxListeners();
+    (server as any).maxConnections = server.getMaxListeners();
 
     // @ts-ignore private access
     this._listen_callback = callback;
 
-    this._server
-      .on("connection", (socket: WebSocket, request: IncomingMessage) => {
+    server
+      .on("connection", (socket, request: IncomingMessage) => {
         /*
             if (doDebug) {
                 this._dump_statistics();
@@ -121,7 +122,7 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
     this._started = true;
   }
 
-  protected createWSServer() {
+  protected createWSServer(): ws.Server {
     const wsserver = new ws.Server({
       port: this.port,
       verifyClient: (info: {
@@ -193,7 +194,7 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
 }
 
 export class OPCUAWsSecureServerEndPoint extends OPCUAWsServerEndPoint {
-  protected createWSServer() {
+  protected createWSServer(): ws.Server {
     const pemCert = toPem(this.getCertificate(), "CERTIFICATE");
     const httpServer = https.createServer({
       cert: pemCert,

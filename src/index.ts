@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import {setDebugFlag } from 'node-opcua-debug'
+
 // CHECK OVERRIDDEN METHODS:
 /**
     WsOPCUAServer.createEndpoint
@@ -9,8 +11,8 @@
  */
 
 
-// setDebugFlag('server_secure_channel_layer',true);
-// setDebugFlag('message_builder',true);
+ setDebugFlag('server_secure_channel_layer',true);
+ setDebugFlag('message_builder',true);
 
 import { startControlServer } from "./control-server";
 import { Controller } from "./controller";
