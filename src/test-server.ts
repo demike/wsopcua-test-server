@@ -3,6 +3,7 @@ import { TransportType } from "./ws/server-endpoint";
 import { WsOPCUAServer } from "./ws/ws-opcua-server";
 import { nodesets } from "node-opcua-nodesets";
 import { UserManager } from "./user-manager";
+import { DEFAULT_MAX_ALLOWED_SESSION_NUMBER } from "./server-options";
 import * as path from 'path';
 
 async function adjust_address_space(server: WsOPCUAServer) {
@@ -20,6 +21,7 @@ async function adjust_address_space(server: WsOPCUAServer) {
 export async function startTestServer(nodeSetFileNames: string[]) {
   const server = new WsOPCUAServer({
     port: 4841,
+    maxAllowedSessionNumber: DEFAULT_MAX_ALLOWED_SESSION_NUMBER,
     userManager: new UserManager(),
     alternateEndpoints: [
       {
