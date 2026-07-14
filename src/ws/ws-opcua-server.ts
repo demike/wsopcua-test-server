@@ -33,7 +33,11 @@ export class WsOPCUAServer extends OPCUAServer {
     }
   }
 
-  protected createEndpoint(
+  // NOTE: node-opcua's private OPCUAServer.createEndpoint lost its
+  // `transportType` parameter (now `(port, serverOptions)`), so we no longer
+  // override it directly. Instead we thread the transport type through our
+  // overridden createEndpointDescriptions into this dedicated factory.
+  protected createWsEndpoint(
     port1: number,
     transportType: TransportType,
     serverOptions: OPCUAServerOptions
@@ -43,6 +47,7 @@ export class WsOPCUAServer extends OPCUAServer {
 
     const endPoint = new transportConstructor({
       port: port1,
+      host: serverOptions.host,
 
       certificateManager: this.serverCertificateManager,
 
@@ -87,7 +92,7 @@ export class WsOPCUAServer extends OPCUAServer {
     endpointOptions.transportType =
       endpointOptions.transportType || TransportType.TCP;
 
-    const endPoint = this.createEndpoint(
+    const endPoint = this.createWsEndpoint(
       port,
       endpointOptions.transportType,
       serverOption

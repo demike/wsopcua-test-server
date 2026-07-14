@@ -6,7 +6,6 @@ import {
   DataType,
   Namespace,
   NodeIdLike,
-  readNodeSet2XmlFile,
   StatusCodes,
   Variant,
   VariantArrayType,
@@ -15,6 +14,7 @@ import { NodeSetLoader } from "node-opcua-address-space/dist/source/loader/load_
 import { nodesets } from "node-opcua-nodesets";
 import { startTestServer } from "./test-server";
 import { EventEmitter } from "events";
+import { promises as fsPromises } from "fs";
 
 interface UANamespace extends Namespace {
   _nodeid_index: { [key: string]: BaseNode };
@@ -193,47 +193,42 @@ export class Controller extends EventEmitter {
     return index;
   }
 
-  public loadNamespace(namespaceUri: string, index: number) {
+  public async loadNamespace(namespaceUri: string, index: number) {
     const addressSpace = this.testServer?.engine.addressSpace; // AddressSpace.create();
     if (!addressSpace) {
       return;
     }
 
     const loader = new NodeSetLoader(addressSpace as any);
-    readNodeSet2XmlFile(
-      this.nodesetMap.get(namespaceUri) as string,
-      (err, xmlFile) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-        if (!xmlFile) {
-          return;
-        }
-        loader.addNodeSet(xmlFile, (err) => {
-          if (err) {
-            console.error(err);
-          }
+    try {
+      // node-opcua removed the public `readNodeSet2XmlFile` helper and
+      // `NodeSetLoader.addNodeSet(xml, cb)` is now `addNodeSetAsync(xml)`.
+      const xmlFile = await fsPromises.readFile(
+        this.nodesetMap.get(namespaceUri) as string,
+        "utf-8"
+      );
+      await loader.addNodeSetAsync(xmlFile);
+    } catch (err) {
+      console.error(err);
+      return;
+    }
 
-          const nsarray = addressSpace.getNamespaceArray();
+    const nsarray = addressSpace.getNamespaceArray();
 
-          const newNamespace = nsarray.pop()!;
-          addressSpace.getNamespaceArray().splice(index, 0, newNamespace);
+    const newNamespace = nsarray.pop()!;
+    addressSpace.getNamespaceArray().splice(index, 0, newNamespace);
 
-          newNamespace.index = index;
+    newNamespace.index = index;
 
-          (addressSpace as any).suspendBackReference = false;
-          const nodes: BaseNode[] = Object.values(
-            (newNamespace as any)._nodeid_index
-          );
-          for (const node of nodes) {
-            node.propagate_back_references();
-          }
-          for (const node of nodes) {
-            node.install_extra_properties();
-          }
-        });
-      }
+    (addressSpace as any).suspendBackReference = false;
+    const nodes: BaseNode[] = Object.values(
+      (newNamespace as any)._nodeid_index
     );
+    for (const node of nodes) {
+      node.propagate_back_references();
+    }
+    for (const node of nodes) {
+      node.install_extra_properties();
+    }
   }
 }

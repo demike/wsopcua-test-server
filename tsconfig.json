@@ -1,11 +1,18 @@
 {
     "compilerOptions": {
-      "module": "commonjs",
-      "target": "es6",
+      // node16 so node-opcua 2.175's package.json "exports" subpaths
+      // (e.g. "node-opcua-crypto/web", "@peculiar/utils/bytes") resolve.
+      "module": "node16",
+      "target": "es2020",
       "declaration": true,
       "sourceMap": true,
       "outDir": "./dist",
-      "moduleResolution": "node",
+      "moduleResolution": "node16",
+      // node-opcua's shipped .d.ts assume a newer TS lib (generic
+      // EventEmitter, MapIterator, node:crypto default import); skip
+      // type-checking library declarations to avoid those upstream errors.
+      "skipLibCheck": true,
+      "esModuleInterop": true,
       "rootDir": "src",
      // "outFile": "./dist/ws-opcua.js"
      // "noImplicitAny": true

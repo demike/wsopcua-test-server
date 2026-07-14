@@ -1,7 +1,11 @@
 import { EventEmitter } from "ws";
 import * as net from 'net'
 
-export class WebSocketSocketWrapper implements net.Socket {
+// NOTE: This only implements the subset of net.Socket that node-opcua's
+// ServerTCP_transport actually consumes, so it deliberately does not
+// `implements net.Socket` (newer @types/node adds ~24 members we don't need).
+// It is handed to the endpoint's connection handler via an @ts-ignore cast.
+export class WebSocketSocketWrapper {
     write(str: Uint8Array | string, encoding?: string, cb?: (err?: Error) => void): boolean;
     write(str: Uint8Array | string, cb?: (err?: Error) => void): boolean;
     write(str: any, encoding?: any, cb?: any) {

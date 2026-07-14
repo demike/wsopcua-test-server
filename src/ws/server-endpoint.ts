@@ -10,7 +10,6 @@ import {
   SecurityPolicy,
   ServerSecureChannelLayer,
 } from "node-opcua";
-import { toPem } from "node-opcua-crypto";
 import * as ws from "ws";
 import * as https from "https";
 import { WebSocketSocketWrapper } from "./websocket-socket-wrapper";
@@ -45,6 +44,18 @@ export enum TransportType {
   TCP,
   WEBSOCKET,
   WEBSOCKET_SECURE,
+}
+
+/**
+ * Wrap a DER-encoded buffer in a PEM envelope.
+ *
+ * node-opcua-crypto v5 is an ESM-only package, so its `toPem` helper cannot be
+ * `require`d from this CommonJS module. Since the conversion is a plain base64
+ * re-encoding, we inline it here to avoid pulling in the ESM dependency.
+ */
+function derToPem(der: Buffer | Uint8Array, label: string): string {
+  const base64 = Buffer.from(der).toString("base64").replace(/(.{64})/g, "$1\n");
+  return `-----BEGIN ${label}-----\n${base64}\n-----END ${label}-----\n`;
 }
 
 export interface OPCUAWsServerEndpointOptions
@@ -178,7 +189,7 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
   public addEndpointDescription(
     securityMode: MessageSecurityMode,
     securityPolicy: SecurityPolicy,
-    options?: EndpointDescriptionParams
+    options: EndpointDescriptionParams
   ): void {
     super.addEndpointDescription(securityMode, securityPolicy, options);
     const endpoints = this.endpointDescriptions();
@@ -195,10 +206,15 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
 
 export class OPCUAWsSecureServerEndPoint extends OPCUAWsServerEndPoint {
   protected createWSServer(): ws.Server {
-    const pemCert = toPem(this.getCertificate(), "CERTIFICATE");
+    const pemCert = derToPem(this.getCertificate(), "CERTIFICATE");
+    // node-opcua-crypto v5 wraps the private key in an opaque
+    // `{ hidden: string | KeyObject }` object instead of returning a PEM
+    // string. Both a PEM string and a Node KeyObject are accepted by
+    // https.createServer as `key`, so we hand over the wrapped value.
+    const privateKey = (this.getPrivateKey() as unknown as { hidden: string | Object }).hidden;
     const httpServer = https.createServer({
       cert: pemCert,
-      key: this.getPrivateKey(),
+      key: privateKey as any,
     });
     const wsserver = new ws.Server({
       // port: this.port,

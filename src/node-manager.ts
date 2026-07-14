@@ -1,6 +1,5 @@
 import {
   AccessLevelFlag,
-  build_address_space_for_conformance_testing,
   coerceNodeId,
   DataType,
   ExpandedNodeId,
@@ -9,6 +8,8 @@ import {
   StatusCodes,
   Variant,
 } from "node-opcua";
+// No longer re-exported from the "node-opcua" barrel; import from its package.
+import { build_address_space_for_conformance_testing } from "node-opcua-address-space-for-conformance-testing";
 import { WsOPCUAServer } from "./ws/ws-opcua-server";
 
 export class NodeManager {

@@ -1,7 +1,10 @@
-import { IUserManager, ServerSession, UserManagerOptions, ValidUserFunc } from "node-opcua";
+import { IUserManagerEx } from "node-opcua";
 
 
-export class UserManager implements UserManagerOptions {
+// node-opcua's `UserManagerOptions` is now a union type
+// (`IUserManagerEx | UAUserManagerBase`) which cannot be `implements`-ed.
+// We implement the plain object variant instead.
+export class UserManager implements IUserManagerEx {
 
     private users: {[key: string] : string} = {
         "john": "john_pw",
