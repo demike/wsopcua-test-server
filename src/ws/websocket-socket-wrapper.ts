@@ -44,7 +44,10 @@ export class WebSocketSocketWrapper {
         return this;
     }
     setKeepAlive(enable?: boolean, initialDelay?: number): this {
-        throw new Error('Method not implemented.');
+        // no-op: keep-alive is managed by the underlying WebSocket, not
+        // applicable here. node-opcua's ServerTCP_transport._install_socket
+        // calls this on connect, so it must not throw.
+        return this;
     }
     address() {
        return this.webSocket._socket.address();
@@ -166,8 +169,13 @@ export class WebSocketSocketWrapper {
     once(event: 'lookup', listener: (err: Error, address: string, family: string | number, host: string) => void): this;
     once(event: 'timeout', listener: () => void): this;
     once(event: any, listener: any) {
-        throw new Error('Method not implemented.');
-        return this;
+        // Auto-remove after the first invocation, delegating to the same
+        // event translation used by addListener.
+        const onceWrapper = (...args: any[]) => {
+            this.removeListener(event, onceWrapper);
+            listener(...args);
+        };
+        return this.addListener(event, onceWrapper);
     }
     prependListener(event: string, listener: (...args: any[]) => void): this;
     prependListener(event: 'close', listener: (had_error: boolean) => void): this;
@@ -179,8 +187,9 @@ export class WebSocketSocketWrapper {
     prependListener(event: 'lookup', listener: (err: Error, address: string, family: string | number, host: string) => void): this;
     prependListener(event: 'timeout', listener: () => void): this;
     prependListener(event: any, listener: any) {
-        throw new Error('Method not implemented.');
-        return this;
+        // WebSocket-backed socket: listener ordering is not significant here,
+        // so prepending is equivalent to a normal add.
+        return this.addListener(event, listener);
     }
 
     prependOnceListener(event: string, listener: (...args: any[]) => void): this;
@@ -193,8 +202,9 @@ export class WebSocketSocketWrapper {
     prependOnceListener(event: 'lookup', listener: (err: Error, address: string, family: string | number, host: string) => void): this;
     prependOnceListener(event: 'timeout', listener: () => void): this;
     prependOnceListener(event: any, listener: any) {
-        throw new Error('Method not implemented.');
-        return this;
+        // node-opcua's ServerTCP_transport uses this to install the one-time
+        // HEL "close" watcher; ordering is not significant here.
+        return this.once(event, listener);
     }
 
     get writable() {
