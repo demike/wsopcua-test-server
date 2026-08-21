@@ -28,6 +28,7 @@ interface UANamespace extends Namespace {
  */
 export class Controller extends EventEmitter {
   private testServer?: WsOPCUAServer;
+  private lifecycleQueue: Promise<unknown> = Promise.resolve();
   public nodesetMap = new Map<string, string>([
     ["http://opcfoundation.org/UA/DI/", nodesets.di],
   ]);
@@ -88,8 +89,13 @@ export class Controller extends EventEmitter {
           const nsFiles = (inputArguments[0].value as Array<
             string
           >).map((namespace) => this.nodesetMap.get(namespace)) as string[];
-          await this.startTestServer(nsFiles);
-          callback(null, { statusCode: StatusCodes.Good });
+          try {
+            await this.startTestServer(nsFiles);
+            callback(null, { statusCode: StatusCodes.Good });
+          } catch (err) {
+            console.log("failed to start test server", err);
+            callback(err as Error, { statusCode: StatusCodes.BadInternalError });
+          }
         }
       }
     );
@@ -128,17 +134,47 @@ export class Controller extends EventEmitter {
   }
 
   public async startTestServer(namespaces: string[]) {
-    if (!this.testServer) {
+    return this.enqueueLifecycle(async () => {
+      // Always tear down any previous instance first. Reusing an existing
+      // server (the old `if (!this.testServer)` guard) or starting a new one
+      // while a previous instance is still shutting down races on the shared
+      // endpoint port (4445): a test session could connect to a half
+      // torn-down / half started server and observe a missing address space.
+      await this.disposeTestServer();
       this.testServer = await startTestServer(namespaces);
-    }
-    this.emit("test-server-started", this.testServer);
+      this.emit("test-server-started", this.testServer);
+      return this.testServer;
+    });
   }
 
   public async stopTestServer() {
+    return this.enqueueLifecycle(() => this.disposeTestServer());
+  }
+
+  /**
+   * Serialises test-server lifecycle operations (start/stop) so they can never
+   * overlap. The e2e clients issue a stop immediately followed by a start (and
+   * different test files do so back-to-back); without serialisation the stop's
+   * `shutdown()` can still be in flight when the next start binds the endpoint.
+   */
+  private enqueueLifecycle<T>(operation: () => Promise<T>): Promise<T> {
+    const run = this.lifecycleQueue.then(operation, operation);
+    // Keep the chain alive regardless of the outcome, without leaking the
+    // rejection to an unhandled-rejection handler.
+    this.lifecycleQueue = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
+  }
+
+  private async disposeTestServer() {
     const testServer = this.testServer;
     this.testServer = undefined;
-    await testServer?.shutdown();
-    this.emit("test-server-stopped", this.testServer);
+    if (testServer) {
+      await testServer.shutdown();
+      this.emit("test-server-stopped", undefined);
+    }
   }
 
   public reloadNamespace(namespaceUri: string) {
