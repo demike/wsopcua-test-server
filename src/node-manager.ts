@@ -139,25 +139,43 @@ export class NodeManager {
 
     methodAddNamespaceForComplianceTesting?.bindMethod(
       async (_inputArguments, _context, callback) => {
-        if (this.testServer?.engine.addressSpace) {
-          build_address_space_for_conformance_testing(
-            this.testServer?.engine.addressSpace!,
-            undefined
-          );
-          const namespace = this.testServer.engine.addressSpace.getNamespaceIndex(
-            "urn://node-opcua-simulator"
-          );
-          callback(null, {
-            statusCode: StatusCodes.Good,
-            outputArguments: [
-              new Variant({ value: namespace, dataType: DataType.UInt16 }),
-            ],
-          });
-        } else {
+        const addressSpace = this.testServer?.engine.addressSpace;
+        if (!addressSpace) {
           callback(new Error("Test Server missing!"), {
             statusCode: StatusCodes.BadInvalidState,
           });
+          return;
         }
+
+        const simulatorUri = "urn://node-opcua-simulator";
+        // A well-known node that the conformance address space always creates.
+        // Used both to detect an already-built namespace (idempotency) and to
+        // verify the build actually committed before reporting success.
+        const probeNodeId = (namespaceIndex: number) =>
+          coerceNodeId("s=ObjectWithMethods", namespaceIndex);
+
+        let namespaceIndex = addressSpace.getNamespaceIndex(simulatorUri);
+        if (namespaceIndex < 0 || !addressSpace.findNode(probeNodeId(namespaceIndex))) {
+          build_address_space_for_conformance_testing(addressSpace, undefined);
+          namespaceIndex = addressSpace.getNamespaceIndex(simulatorUri);
+        }
+
+        // Only report success once the conformance nodes are resolvable, so the
+        // client never receives a namespace index that later yields
+        // BadNodeIdUnknown.
+        if (namespaceIndex < 0 || !addressSpace.findNode(probeNodeId(namespaceIndex))) {
+          callback(new Error("failed to build conformance test namespace"), {
+            statusCode: StatusCodes.BadInternalError,
+          });
+          return;
+        }
+
+        callback(null, {
+          statusCode: StatusCodes.Good,
+          outputArguments: [
+            new Variant({ value: namespaceIndex, dataType: DataType.UInt16 }),
+          ],
+        });
       }
     );
   }

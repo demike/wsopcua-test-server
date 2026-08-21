@@ -59,6 +59,11 @@ export async function startTestServer(nodeSetFileNames: string[]) {
   } catch(err) {
     console.log("failed to start test server !");
     console.log(err);
+    // Release any partially-acquired resources (e.g. a bound endpoint) so a
+    // retry can rebind the port, then surface the failure to the caller
+    // instead of returning a server that is not actually listening.
+    await server.shutdown().catch(() => undefined);
+    throw err;
   }
   
   return server;
