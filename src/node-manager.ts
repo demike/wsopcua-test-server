@@ -156,7 +156,12 @@ export class NodeManager {
 
         let namespaceIndex = addressSpace.getNamespaceIndex(simulatorUri);
         if (namespaceIndex < 0 || !addressSpace.findNode(probeNodeId(namespaceIndex))) {
-          build_address_space_for_conformance_testing(addressSpace, undefined);
+          // NB: build_address_space_for_conformance_testing is async - the
+          // namespace is registered synchronously but its nodes are added after
+          // several awaits. The previous code did not await it and returned
+          // Good (with a namespace index) before the nodes existed, which is the
+          // root cause of the intermittent BadNodeIdUnknown seen by clients.
+          await build_address_space_for_conformance_testing(addressSpace, undefined);
           namespaceIndex = addressSpace.getNamespaceIndex(simulatorUri);
         }
 
