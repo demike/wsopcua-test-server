@@ -1,123 +1,100 @@
 import {
-  getFullyQualifiedDomainName,
+  DiskCertificateKeyPairProvider,
   OPCUAServer,
   OPCUAServerEndPoint,
   OPCUAServerOptions,
+  OpaqueCertificateKeyPairProvider,
+  ResolvedCertificateKeyPairProvider,
 } from "node-opcua";
 import {
   TransportType,
   OPCUAWsServerEndPoint,
   OPCUAWsServerEndpointOptions,
   OPCUAWsSecureServerEndPoint,
-} from "./server-endpoint";
+} from "./server-endpoint.js";
 
 export interface WsOPCUAServerOptions extends OPCUAServerOptions {
   transportType?: TransportType;
   alternateEndpoints?: OPCUAWsServerEndpointOptions[];
 }
 
+// The overridden createEndpoint/createEndpointDescriptions are private in
+// node-opcua's typings.
 // @ts-ignore
 export class WsOPCUAServer extends OPCUAServer {
+  /** transport type of the endpoint currently being created, see createEndpointDescriptions */
+  private pendingTransportType?: TransportType;
+
   constructor(options: WsOPCUAServerOptions) {
     super(options);
   }
 
-  private getTransportConstructor(transportType: TransportType) {
-    switch (transportType) {
-      case TransportType.TCP:
-        return OPCUAServerEndPoint;
-      case TransportType.WEBSOCKET:
-        return OPCUAWsServerEndPoint;
-      case TransportType.WEBSOCKET_SECURE:
-        return OPCUAWsSecureServerEndPoint;
+  /**
+   * node-opcua builds every endpoint through the private
+   * `createEndpointDescriptions(serverOptions, endpointOptions)`, which calls
+   * `createEndpoint(port, serverOptions)` without the endpoint options. Let the
+   * upstream implementation do all the endpoint description work and only
+   * remember the requested transport so createEndpoint can pick the class.
+   */
+  protected createEndpointDescriptions(
+    serverOptions: WsOPCUAServerOptions,
+    endpointOptions: OPCUAWsServerEndpointOptions
+  ): OPCUAServerEndPoint {
+    this.pendingTransportType =
+      endpointOptions.transportType ?? TransportType.TCP;
+    try {
+      // @ts-ignore private in node-opcua's typings
+      return super.createEndpointDescriptions(serverOptions, endpointOptions);
+    } finally {
+      this.pendingTransportType = undefined;
     }
   }
 
-  // NOTE: node-opcua's private OPCUAServer.createEndpoint lost its
-  // `transportType` parameter (now `(port, serverOptions)`), so we no longer
-  // override it directly. Instead we thread the transport type through our
-  // overridden createEndpointDescriptions into this dedicated factory.
-  protected createWsEndpoint(
-    port1: number,
-    transportType: TransportType,
+  /**
+   * Mirrors node-opcua's OPCUAServer#createEndpoint (2.187), but instantiates
+   * the WebSocket endpoint classes for WEBSOCKET / WEBSOCKET_SECURE.
+   */
+  protected createEndpoint(
+    port: number,
     serverOptions: OPCUAServerOptions
-  ) {
-    // add the tcp/ip endpoint with no security, a ws endpoint or a wss endpoint
-    let transportConstructor = this.getTransportConstructor(transportType);
+  ): OPCUAServerEndPoint {
+    const transportType = this.pendingTransportType ?? TransportType.TCP;
+    if (transportType === TransportType.TCP) {
+      // @ts-ignore private in node-opcua's typings
+      return super.createEndpoint(port, serverOptions);
+    }
+    const EndPoint =
+      transportType === TransportType.WEBSOCKET_SECURE
+        ? OPCUAWsSecureServerEndPoint
+        : OPCUAWsServerEndPoint;
 
-    const endPoint = new transportConstructor({
-      port: port1,
+    // Same provider choice as upstream: a per-endpoint disk provider, unless
+    // the server's key is passphrase-resolved or opaque (HSM/KMS), which
+    // cannot be rebuilt from files.
+    const serverProvider = this.getProvider();
+    const certificateKeyPairProvider =
+      serverProvider instanceof ResolvedCertificateKeyPairProvider ||
+      serverProvider instanceof OpaqueCertificateKeyPairProvider
+        ? serverProvider
+        : new DiskCertificateKeyPairProvider(
+            this.certificateFile,
+            this.privateKeyFile
+          );
+
+    return new EndPoint({
+      port,
       host: serverOptions.host,
-
+      reusePort: serverOptions.reusePort,
       certificateManager: this.serverCertificateManager,
-
-      certificateChain: this.getCertificateChain(),
-      privateKey: this.getPrivateKey(),
-
+      certificateKeyPairProvider,
       defaultSecureTokenLifetime:
         serverOptions.defaultSecureTokenLifetime || 600000,
       timeout: serverOptions.timeout || 3 * 60 * 1000,
-
       maxConnections: this.maxConnectionsPerEndpoint,
-      // @ts-ignore
+      // @ts-ignore private in node-opcua's typings
       objectFactory: this.objectFactory,
       serverInfo: this.serverInfo,
-    });
-    return endPoint;
-  }
-
-  protected createEndpointDescriptions(
-    serverOption: WsOPCUAServerOptions,
-    endpointOptions: OPCUAWsServerEndpointOptions
-  ) {
-    /* istanbul ignore next */
-    if (!endpointOptions) {
-      throw new Error("internal error");
-    }
-    const hostname = getFullyQualifiedDomainName();
-    endpointOptions.hostname = endpointOptions.hostname || hostname;
-    endpointOptions.port = endpointOptions.port || 26543;
-
-    /* istanbul ignore next */
-    if (
-      !endpointOptions.hasOwnProperty("port") ||
-      !isFinite(endpointOptions.port!) ||
-      typeof endpointOptions.port !== "number"
-    ) {
-      throw new Error("expecting a valid port (number)");
-    }
-
-    const port = Number(endpointOptions.port || 0);
-
-    endpointOptions.transportType =
-      endpointOptions.transportType || TransportType.TCP;
-
-    const endPoint = this.createWsEndpoint(
-      port,
-      endpointOptions.transportType,
-      serverOption
-    );
-
-    endpointOptions.alternateHostname = endpointOptions.alternateHostname || [];
-    const alternateHostname =
-      endpointOptions.alternateHostname instanceof Array
-        ? endpointOptions.alternateHostname
-        : [endpointOptions.alternateHostname];
-    const allowAnonymous =
-      endpointOptions.allowAnonymous === undefined ? true : !!endpointOptions.allowAnonymous;
-
-    endPoint.addStandardEndpointDescriptions({
-      allowAnonymous,
-      securityModes: endpointOptions.securityModes,
-      securityPolicies: endpointOptions.securityPolicies,
-
-      hostname: endpointOptions.hostname,
-      alternateHostname,
-
-      disableDiscovery: !!endpointOptions.disableDiscovery,
-      // xx                hostname,
-      resourcePath: serverOption.resourcePath || "",
-    });
-    return endPoint;
+      transportSettings: serverOptions.transportSettings,
+    }) as unknown as OPCUAServerEndPoint;
   }
 }

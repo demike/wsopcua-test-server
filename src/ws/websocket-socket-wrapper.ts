@@ -1,4 +1,4 @@
-import { EventEmitter } from "ws";
+import { WebSocket } from "ws";
 import * as net from 'net'
 
 // NOTE: This only implements the subset of net.Socket that node-opcua's
@@ -123,8 +123,8 @@ export class WebSocketSocketWrapper {
                 break;
             case 'error':
                 //TODO: removeEventListener fails for this
-                this.webSocket.addEventListener('error', (evt: Event) => {
-                    listener( (evt as ErrorEvent).error);
+                this.webSocket.addEventListener('error', (evt) => {
+                    listener(evt.error);
                 })
                 break;
             case 'connect':
@@ -280,12 +280,6 @@ export class WebSocketSocketWrapper {
     setDefaultEncoding(encoding: string): this {
         throw new Error('Method not implemented.');
     }
-    cork(): void {
-        throw new Error('Method not implemented.');
-    }
-    uncork(): void {
-        throw new Error('Method not implemented.');
-    }
  
     _read(size: number): void {
         throw new Error('Method not implemented.');
@@ -356,7 +350,7 @@ export class WebSocketSocketWrapper {
         throw new Error('Method not implemented.');
     }
 
-    webSocket: WebSocket & EventEmitter & { _socket: net.Socket};
+    webSocket: WebSocket & { _socket: net.Socket };
     constructor(websocket: WebSocket) {
         this.webSocket = websocket as any;
     }

@@ -1,25 +1,18 @@
-import { WsOPCUAServer } from "./ws/ws-opcua-server";
+import { WsOPCUAServer } from "./ws/ws-opcua-server.js";
 import {
   AccessLevelFlag,
-  BaseNode,
   coerceNodeId,
   DataType,
-  Namespace,
+  generateAddressSpaceRaw,
+  nodesets,
   NodeIdLike,
   StatusCodes,
   Variant,
   VariantArrayType,
 } from "node-opcua";
-import { NodeSetLoader } from "node-opcua-address-space/dist/source/loader/load_nodeset2";
-import { nodesets } from "node-opcua-nodesets";
-import { startTestServer } from "./test-server";
+import { startTestServer } from "./test-server.js";
 import { EventEmitter } from "events";
 import { promises as fsPromises } from "fs";
-
-interface UANamespace extends Namespace {
-  _nodeid_index: { [key: string]: BaseNode };
-  dispose(): void;
-}
 
 /**
  * emits following events:
@@ -177,94 +170,45 @@ export class Controller extends EventEmitter {
     }
   }
 
-  public reloadNamespace(namespaceUri: string) {
-    const index = this.deleteNamespace(namespaceUri);
-    if (index >= 0) {
-      this.loadNamespace(namespaceUri, index);
+  public async reloadNamespace(namespaceUri: string) {
+    if (this.deleteNamespace(namespaceUri)) {
+      await this.loadNamespace(namespaceUri);
     }
   }
 
   /**
-   *
-   * @param namespaceUri
-   * @returns the namespace index of the deleted namespace (-1 if not found)
+   * Empties the namespace, keeping it registered under the same index and uri
+   * so it can be populated again (see AddressSpace#deleteNamespace).
+   * @returns false if there is no test server or no such namespace
    */
-  private deleteNamespace(namespaceUri: string) {
+  private deleteNamespace(namespaceUri: string): boolean {
     const addressSpace = this.testServer?.engine.addressSpace;
-    if (!addressSpace) {
-      return -1;
+    if (!addressSpace?.getNamespace(namespaceUri)) {
+      return false;
     }
-    /*
-        const namespaces = makeNodeId(ObjectIds.Server_Namespaces);
-        const namespacesNode = addressSpace.findNode(namespaces) as UAObject;
-        const namespaceNode = namespacesNode.getChildByName(namespaceUri)
-        if(namespaceNode) {
-            addressSpace.deleteNode(namespaceNode);
-        }
-*/
-
-    const namespace: UANamespace = addressSpace?.getNamespace(
-      namespaceUri
-    ) as UANamespace;
-    if (!namespace) {
-      return -1;
-    }
-
-    for (const node of Object.values(namespace._nodeid_index)) {
-      if (node.addressSpace) {
-        try {
-          namespace.deleteNode(node);
-        } catch (e) {
-          //(node as any).dispose();
-          console.log(e);
-        }
-      }
-    }
-
-    (namespace as any).dispose();
-    const index = namespace.index;
-
-    const nsArray = addressSpace.getNamespaceArray();
-    nsArray.splice(index, 1);
-    return index;
+    addressSpace.deleteNamespace(namespaceUri);
+    return true;
   }
 
-  public async loadNamespace(namespaceUri: string, index: number) {
-    const addressSpace = this.testServer?.engine.addressSpace; // AddressSpace.create();
+  public async loadNamespace(namespaceUri: string) {
+    const addressSpace = this.testServer?.engine.addressSpace;
     if (!addressSpace) {
       return;
     }
 
-    const loader = new NodeSetLoader(addressSpace as any);
     try {
-      // node-opcua removed the public `readNodeSet2XmlFile` helper and
-      // `NodeSetLoader.addNodeSet(xml, cb)` is now `addNodeSetAsync(xml)`.
-      const xmlFile = await fsPromises.readFile(
+      // Public loader API. Since node-opcua 2.187 it treats required models
+      // that are already registered (e.g. namespace 0) as satisfied, and
+      // reuses an emptied namespace, so one nodeset can be (re)loaded into the
+      // running server. It also propagates the back references.
+      await generateAddressSpaceRaw(
+        addressSpace,
         this.nodesetMap.get(namespaceUri) as string,
-        "utf-8"
+        (xmlFile) => fsPromises.readFile(xmlFile, "utf-8"),
+        {}
       );
-      await loader.addNodeSetAsync(xmlFile);
     } catch (err) {
       console.error(err);
-      return;
-    }
-
-    const nsarray = addressSpace.getNamespaceArray();
-
-    const newNamespace = nsarray.pop()!;
-    addressSpace.getNamespaceArray().splice(index, 0, newNamespace);
-
-    newNamespace.index = index;
-
-    (addressSpace as any).suspendBackReference = false;
-    const nodes: BaseNode[] = Object.values(
-      (newNamespace as any)._nodeid_index
-    );
-    for (const node of nodes) {
-      node.propagate_back_references();
-    }
-    for (const node of nodes) {
-      node.install_extra_properties();
     }
   }
 }

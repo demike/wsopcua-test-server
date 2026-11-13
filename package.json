@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "description": "test opcua server with websocket support",
   "main": "./dist/index.js",
+  "type": "module",
   "types": "./dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -27,9 +28,8 @@
   "homepage": "https://github.com/demike/wsopcua-test-server#readme",
   "dependencies": {
     "chalk": "^4.1.2",
-    "node-opcua": "^2.175.1",
-    "node-opcua-address-space-for-conformance-testing": "^2.175.1",
-    "node-opcua-crypto": "^5.3.6",
+    "node-opcua": "2.187.26",
+    "node-opcua-address-space-for-conformance-testing": "2.187.26",
     "ws": "^8.21.0"
   },
   "devDependencies": {
@@ -43,5 +43,8 @@
   },
   "files": [
     "dist/**"
-  ]
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  }
 }
