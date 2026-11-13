@@ -14,8 +14,8 @@
 //  setDebugFlag('server_secure_channel_layer',true);
 //  setDebugFlag('message_builder',true);
 
-import { startControlServer } from "./control-server";
-import { Controller } from "./controller";
+import { startControlServer } from "./control-server.js";
+import { Controller } from "./controller.js";
 
 process.on("uncaughtException", (err) => {
   console.error("There was an uncaught error", err);

@@ -10,7 +10,7 @@ import {
 } from "node-opcua";
 // No longer re-exported from the "node-opcua" barrel; import from its package.
 import { build_address_space_for_conformance_testing } from "node-opcua-address-space-for-conformance-testing";
-import { WsOPCUAServer } from "./ws/ws-opcua-server";
+import { WsOPCUAServer } from "./ws/ws-opcua-server.js";
 
 export class NodeManager {
   public testServer?: WsOPCUAServer;

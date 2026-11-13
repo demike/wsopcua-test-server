@@ -1,9 +1,8 @@
-import { AddressSpace, generateAddressSpace, UAVariable } from "node-opcua";
-import { TransportType } from "./ws/server-endpoint";
-import { WsOPCUAServer } from "./ws/ws-opcua-server";
-import { nodesets } from "node-opcua-nodesets";
-import { UserManager } from "./user-manager";
-import { DEFAULT_MAX_ALLOWED_SESSION_NUMBER } from "./server-options";
+import { AddressSpace, generateAddressSpace, nodesets, UAVariable } from "node-opcua";
+import { TransportType } from "./ws/server-endpoint.js";
+import { WsOPCUAServer } from "./ws/ws-opcua-server.js";
+import { UserManager } from "./user-manager.js";
+import { DEFAULT_MAX_ALLOWED_SESSION_NUMBER } from "./server-options.js";
 import * as path from 'path';
 
 async function adjust_address_space(server: WsOPCUAServer) {
@@ -21,7 +20,6 @@ async function adjust_address_space(server: WsOPCUAServer) {
 export async function startTestServer(nodeSetFileNames: string[]) {
   const server = new WsOPCUAServer({
     port: 4841,
-    maxAllowedSessionNumber: DEFAULT_MAX_ALLOWED_SESSION_NUMBER,
     userManager: new UserManager(),
     alternateEndpoints: [
       {
@@ -41,10 +39,11 @@ export async function startTestServer(nodeSetFileNames: string[]) {
     },
     nodeset_filename: [nodesets.standard, ...nodeSetFileNames],
     serverCapabilities: {
+      maxSessions: DEFAULT_MAX_ALLOWED_SESSION_NUMBER,
       minSupportedSampleRate: 10,
     },
-    certificateFile: path.join(__dirname,'./assets/certificate.pem'),
-    privateKeyFile: path.join(__dirname,'./assets/private_key.pem')
+    certificateFile: path.join(import.meta.dirname,'./assets/certificate.pem'),
+    privateKeyFile: path.join(import.meta.dirname,'./assets/private_key.pem')
   });
 
   await server.initialize();

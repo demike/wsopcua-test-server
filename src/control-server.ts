@@ -1,9 +1,9 @@
-import { Controller } from "./controller";
-import { NodeManager } from "./node-manager";
-import { UserManager } from "./user-manager";
-import { TransportType } from "./ws/server-endpoint";
-import { WsOPCUAServer } from "./ws/ws-opcua-server";
-import { DEFAULT_MAX_ALLOWED_SESSION_NUMBER } from "./server-options";
+import { Controller } from "./controller.js";
+import { NodeManager } from "./node-manager.js";
+import { UserManager } from "./user-manager.js";
+import { TransportType } from "./ws/server-endpoint.js";
+import { WsOPCUAServer } from "./ws/ws-opcua-server.js";
+import { DEFAULT_MAX_ALLOWED_SESSION_NUMBER } from "./server-options.js";
 
 function construct_control_address_space(controlServer: WsOPCUAServer) {
   const controller = new Controller(controlServer, 1);
@@ -31,7 +31,6 @@ function construct_control_address_space(controlServer: WsOPCUAServer) {
 export async function startControlServer(userManager?: UserManager) {
   const controlServer = new WsOPCUAServer({
     port: 4840,
-    maxAllowedSessionNumber: DEFAULT_MAX_ALLOWED_SESSION_NUMBER,
     userManager,
     alternateEndpoints: [
       {
@@ -49,6 +48,7 @@ export async function startControlServer(userManager?: UserManager) {
       applicationUri: "wsopcua-control-server",
     },
     serverCapabilities: {
+      maxSessions: DEFAULT_MAX_ALLOWED_SESSION_NUMBER,
       minSupportedSampleRate: 10,
     },
   });

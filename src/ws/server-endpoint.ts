@@ -1,8 +1,8 @@
-// import * as chalk from 'chalk';
-const chalk = require("chalk");
+import chalk from "chalk";
 import { IncomingMessage } from "http";
 import {
   assert,
+  make_debugLog,
   EndpointDescriptionParams,
   MessageSecurityMode,
   OPCUAServerEndPoint,
@@ -10,13 +10,13 @@ import {
   SecurityPolicy,
   ServerSecureChannelLayer,
 } from "node-opcua";
-import * as ws from "ws";
+import { WebSocketServer } from "ws";
 import * as https from "https";
-import { WebSocketSocketWrapper } from "./websocket-socket-wrapper";
-import { make_debugLog } from "node-opcua-debug";
+import { WebSocketSocketWrapper } from "./websocket-socket-wrapper.js";
 import { Socket } from "net";
+import { fileURLToPath } from "url";
 
-const debugLog = make_debugLog(__filename);
+const debugLog = make_debugLog(fileURLToPath(import.meta.url));
 
 function extractSocketData(socket: Socket, reason: string) {
   const {
@@ -49,9 +49,9 @@ export enum TransportType {
 /**
  * Wrap a DER-encoded buffer in a PEM envelope.
  *
- * node-opcua-crypto v5 is an ESM-only package, so its `toPem` helper cannot be
- * `require`d from this CommonJS module. Since the conversion is a plain base64
- * re-encoding, we inline it here to avoid pulling in the ESM dependency.
+ * The conversion is a plain base64 re-encoding, so it is inlined here rather
+ * than depending on node-opcua-crypto's `toPem` directly (node-opcua does not
+ * re-export it, and pinning a second copy of node-opcua-crypto is not worth it).
  */
 function derToPem(der: Buffer | Uint8Array, label: string): string {
   const base64 = Buffer.from(der).toString("base64").replace(/(.{64})/g, "$1\n");
@@ -65,7 +65,7 @@ export interface OPCUAWsServerEndpointOptions
 
 // @ts-ignore // ignore overriding the type of _server
 export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
-  protected _server?: ws.Server;
+  protected _server?: WebSocketServer;
   protected _started: boolean = false;
   protected _channels: { [key: string]: ServerSecureChannelLayer } = {};
 
@@ -133,8 +133,8 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
     this._started = true;
   }
 
-  protected createWSServer(): ws.Server {
-    const wsserver = new ws.Server({
+  protected createWSServer(): WebSocketServer {
+    const wsserver = new WebSocketServer({
       port: this.port,
       verifyClient: (info: {
         origin: string;
@@ -205,18 +205,18 @@ export class OPCUAWsServerEndPoint extends OPCUAServerEndPoint {
 }
 
 export class OPCUAWsSecureServerEndPoint extends OPCUAWsServerEndPoint {
-  protected createWSServer(): ws.Server {
+  protected createWSServer(): WebSocketServer {
     const pemCert = derToPem(this.getCertificate(), "CERTIFICATE");
-    // node-opcua-crypto v5 wraps the private key in an opaque
-    // `{ hidden: string | KeyObject }` object instead of returning a PEM
-    // string. Both a PEM string and a Node KeyObject are accepted by
-    // https.createServer as `key`, so we hand over the wrapped value.
-    const privateKey = (this.getPrivateKey() as unknown as { hidden: string | Object }).hidden;
+    // node-opcua >= 2.187 keeps the key behind the endpoint's certificate
+    // provider (OPCUAServerEndPoint#getPrivateKey is gone). node-opcua-crypto
+    // wraps it as `{ hidden: string | KeyObject }`; both a PEM string and a
+    // Node KeyObject are accepted by https.createServer as `key`.
+    const privateKey = this.getCertificateProvider().getPrivateKey().hidden;
     const httpServer = https.createServer({
       cert: pemCert,
       key: privateKey as any,
     });
-    const wsserver = new ws.Server({
+    const wsserver = new WebSocketServer({
       // port: this.port,
       verifyClient: (info: {
         origin: string;
